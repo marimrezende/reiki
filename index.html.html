@@ -1,0 +1,427 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>Renji / Reiki — Play Aid</title>
+<link href="https://fonts.googleapis.com/css2?family=Cinzel:wght@400;600;700&family=EB+Garamond:ital,wght@0,400;0,500;0,600;1,400;1,500&display=swap" rel="stylesheet">
+<style>
+*,*::before,*::after{box-sizing:border-box;margin:0;padding:0}
+:root{
+  --bg:#f0ead8;
+  --surface:rgba(255,252,244,0.85);
+  --surface2:rgba(255,252,244,0.65);
+  --surface3:rgba(240,234,216,0.55);
+  --ink:#1c160a;
+  --gold:#2c2420;
+  --gold-dim:rgba(44,36,32,0.07);
+  --gold-border:rgba(44,36,32,0.2);
+  --crimson:#7a1a1a;
+  --crimson-dim:rgba(122,26,26,0.1);
+  --time:#1a3568;
+  --time-dim:rgba(26,53,104,0.09);
+  --time-border:rgba(26,53,104,0.28);
+  --spirit:#1a5040;
+  --spirit-dim:rgba(26,80,64,0.09);
+  --spirit-border:rgba(26,80,64,0.28);
+  --prime:#7a5c08;
+  --prime-dim:rgba(122,92,8,0.09);
+  --prime-border:rgba(122,92,8,0.28);
+  --text:#1c160a;
+  --soft:#6a5a3a;
+  --muted:#a89878;
+  --green:#1e6020;
+  --orange:#b06010;
+  --red:#8a1a1a;
+}
+body{background:var(--bg);font-family:'EB Garamond',Georgia,serif;font-size:16px;color:var(--text);min-height:100vh;padding:0;position:relative}
+#paper-grain{position:fixed;inset:0;width:100%;height:100%;pointer-events:none;z-index:1}
+#ink-strokes{position:fixed;inset:0;width:100%;height:100%;pointer-events:none;z-index:2;overflow:visible}
+.app-header,.content-wrap{position:relative;z-index:10}
+.app-header{background:rgba(240,234,216,0.95);border-bottom:1px solid rgba(44,36,32,0.18);padding:14px 20px 0;display:flex;flex-direction:column;position:sticky;top:0;z-index:100;backdrop-filter:blur(6px)}
+.header-top{display:flex;align-items:baseline;justify-content:space-between;gap:12px;margin-bottom:10px;flex-wrap:wrap}
+.char-name{font-family:'Cinzel',serif;font-size:20px;font-weight:700;color:var(--ink);letter-spacing:0.04em}
+.char-sub{font-size:13px;color:var(--soft);font-style:italic}
+.gnosis-badge{font-family:'Cinzel',serif;font-size:10px;font-weight:600;letter-spacing:0.1em;text-transform:uppercase;padding:3px 10px;background:var(--gold-dim);border:1px solid var(--gold-border);color:var(--gold)}
+.tabs{display:flex;gap:0;border-top:1px solid rgba(44,36,32,0.12)}
+.tab{font-family:'Cinzel',serif;font-size:11px;font-weight:600;letter-spacing:0.1em;text-transform:uppercase;padding:10px 20px;cursor:pointer;color:var(--muted);border-bottom:2px solid transparent;transition:color 0.15s,border-color 0.15s;user-select:none;white-space:nowrap}
+.tab:hover{color:var(--ink)}
+.tab.active{color:var(--ink);border-bottom-color:var(--ink)}
+.content-wrap{max-width:820px;margin:0 auto}
+.content{padding:20px;display:none}
+.content.active{display:block}
+.section{margin-bottom:22px}
+.section-title{font-family:'Cinzel',serif;font-size:9px;font-weight:600;letter-spacing:0.18em;text-transform:uppercase;color:var(--gold);margin-bottom:10px;padding-bottom:6px;border-bottom:1px solid rgba(44,36,32,0.15)}
+.card{background:var(--surface);border:1px solid rgba(44,36,32,0.1);padding:14px 16px}
+.card+.card{margin-top:8px}
+.card.time{border-left:3px solid var(--time)}
+.card.spirit{border-left:3px solid var(--spirit)}
+.card.prime{border-left:3px solid var(--prime)}
+.card.ink{border-left:3px solid var(--ink)}
+.grid2{display:grid;grid-template-columns:1fr 1fr;gap:10px}
+@media(max-width:540px){.grid2{grid-template-columns:1fr}}
+.stat-grid{display:grid;grid-template-columns:repeat(3,1fr);gap:8px}
+.stat-pill{background:var(--surface);border:1px solid rgba(44,36,32,0.1);padding:10px 8px;text-align:center}
+.stat-val{font-family:'Cinzel',serif;font-size:22px;font-weight:700;color:var(--ink);line-height:1}
+.stat-lbl{font-size:10px;color:var(--soft);font-style:italic;margin-top:2px}
+.mana-dots{display:flex;gap:7px;flex-wrap:wrap;margin-top:8px}
+.mana-dot{width:22px;height:22px;border-radius:50%;background:var(--ink);border:2px solid var(--ink);cursor:pointer;transition:opacity 0.15s;flex-shrink:0}
+.mana-dot.spent{background:transparent;opacity:0.22}
+.mana-hint{font-size:12.5px;color:var(--soft);font-style:italic;margin-top:6px}
+.spell-slot{background:var(--surface);border:1px dashed rgba(44,36,32,0.22);padding:10px 12px;margin-top:6px;display:flex;align-items:center;gap:10px}
+.spell-slot-label{font-family:'Cinzel',serif;font-size:9px;letter-spacing:0.1em;color:var(--muted);text-transform:uppercase}
+.spell-slot-input{background:transparent;border:none;outline:none;font-family:'EB Garamond',serif;font-size:14px;color:var(--text);font-style:italic;flex:1;padding:0}
+.spell-slot-input::placeholder{color:var(--muted)}
+.spell-slot-close{color:var(--muted);font-size:14px;cursor:pointer;padding:2px 4px}
+.spell-slot-close:hover{color:var(--red)}
+.wisdom-pips{display:flex;gap:4px;margin-top:6px}
+.wis-pip{width:14px;height:14px;border-radius:50%;background:var(--ink)}
+.wis-empty{background:transparent;border:1px solid rgba(44,36,32,0.22)}
+.note{font-size:13px;line-height:1.5;padding:8px 12px;border-left:2px solid;margin-top:8px}
+.note-ink{border-color:var(--ink);background:var(--gold-dim);color:var(--ink)}
+.note-time{border-color:var(--time);background:var(--time-dim);color:var(--time)}
+.note-red{border-color:var(--red);background:rgba(138,26,26,0.07);color:var(--red)}
+.tag{font-family:'Cinzel',serif;font-size:9px;font-weight:600;letter-spacing:0.08em;text-transform:uppercase;padding:2px 7px;border:1px solid}
+.tag-time{background:var(--time-dim);color:var(--time);border-color:var(--time-border)}
+.tag-spirit{background:var(--spirit-dim);color:var(--spirit);border-color:var(--spirit-border)}
+.tag-prime{background:var(--prime-dim);color:var(--prime);border-color:var(--prime-border)}
+.tag-ink{background:var(--gold-dim);color:var(--ink);border-color:var(--gold-border)}
+.tag-crimson{background:var(--crimson-dim);color:var(--crimson);border-color:rgba(122,26,26,0.3)}
+.tag-gray{background:rgba(0,0,0,0.04);color:var(--soft);border-color:rgba(0,0,0,0.1)}
+
+/* SPELL CARDS */
+.spell-name{font-family:'Cinzel',serif;font-size:15px;font-weight:700;color:var(--text);margin-bottom:6px;letter-spacing:0.02em}
+.spell-tags{display:flex;gap:6px;flex-wrap:wrap;margin-bottom:10px}
+.dice-row{background:var(--surface3);border:1px solid rgba(44,36,32,0.1);padding:9px 12px;display:flex;gap:14px;align-items:center;flex-wrap:wrap;margin-bottom:12px}
+.dice-item{text-align:center}
+.dice-val{font-family:'Cinzel',serif;font-size:17px;font-weight:700;color:var(--ink);line-height:1}
+.dice-lbl{font-size:9px;color:var(--soft);letter-spacing:0.06em;text-transform:uppercase}
+.dice-sep{color:var(--muted);font-size:18px;align-self:center}
+.spell-book-text{font-size:14px;color:var(--text);line-height:1.7;margin-bottom:10px}
+.spell-reach-list{margin-top:8px;padding-top:8px;border-top:1px solid rgba(0,0,0,0.07)}
+.spell-reach-item{font-size:13px;color:var(--soft);line-height:1.55;padding:3px 0 3px 14px;position:relative}
+.spell-reach-item::before{content:'+';position:absolute;left:0;color:var(--muted);font-family:'Cinzel',serif;font-size:12px}
+.spell-reach-item strong{color:var(--text);font-style:normal}
+
+/* PLACEHOLDER SPELL SLOTS */
+.spell-add-card{background:var(--surface2);border:1px dashed rgba(44,36,32,0.2);padding:20px;text-align:center;cursor:pointer}
+.spell-add-card:hover{background:var(--surface);border-color:rgba(44,36,32,0.3)}
+.spell-add-title{font-family:'Cinzel',serif;font-size:10px;font-weight:600;letter-spacing:0.12em;text-transform:uppercase;color:var(--muted);margin-bottom:4px}
+.spell-add-hint{font-size:13px;color:var(--muted);font-style:italic}
+
+/* CASTING GUIDE */
+.step{display:grid;grid-template-columns:36px 1fr;gap:12px;padding:12px 0;border-bottom:1px solid rgba(0,0,0,0.06)}
+.step:last-child{border-bottom:none}
+.step-num{width:36px;height:36px;border-radius:50%;background:var(--gold-dim);border:1px solid var(--gold-border);display:flex;align-items:center;justify-content:center;font-family:'Cinzel',serif;font-size:14px;font-weight:700;color:var(--ink);flex-shrink:0;align-self:start;margin-top:2px}
+.step-title{font-family:'Cinzel',serif;font-size:12px;font-weight:600;color:var(--text);margin-bottom:4px;letter-spacing:0.04em}
+.step-body{font-size:14px;color:var(--soft);line-height:1.6}
+.step-body strong{color:var(--text);font-style:normal}
+.ref-table{width:100%;border-collapse:collapse;font-size:13px;margin-top:6px}
+.ref-table th{font-family:'Cinzel',serif;font-size:9px;font-weight:600;letter-spacing:0.1em;text-transform:uppercase;color:var(--ink);opacity:0.7;padding:6px 8px;text-align:left;border-bottom:1px solid rgba(44,36,32,0.18)}
+.ref-table td{padding:5px 8px;border-bottom:1px solid rgba(0,0,0,0.05);color:var(--soft);vertical-align:top}
+.ref-table tr:last-child td{border-bottom:none}
+.ref-table td:first-child{color:var(--text)}
+.paradox-box{background:var(--crimson-dim);border:1px solid rgba(122,26,26,0.25);padding:12px 14px;margin-top:8px}
+.paradox-title{font-family:'Cinzel',serif;font-size:10px;font-weight:600;letter-spacing:0.1em;text-transform:uppercase;color:var(--crimson);margin-bottom:8px}
+.paradox-body{font-size:13px;color:var(--soft);line-height:1.55}
+.reach-row{display:grid;grid-template-columns:1fr 60px 60px 60px;gap:6px;padding:5px 0;border-bottom:1px solid rgba(0,0,0,0.05);align-items:center;font-size:13px}
+.reach-row:last-child{border-bottom:none}
+.reach-row.header{font-family:'Cinzel',serif;font-size:9px;font-weight:600;letter-spacing:0.08em;text-transform:uppercase;color:var(--ink);opacity:0.65;padding-bottom:8px}
+.reach-val{text-align:center;font-family:'Cinzel',serif;font-weight:600}
+.method-grid{display:grid;grid-template-columns:repeat(3,1fr);gap:8px;margin-top:8px}
+@media(max-width:500px){.method-grid{grid-template-columns:1fr}}
+.method-card{background:var(--surface3);border:1px solid rgba(0,0,0,0.07);padding:10px 12px}
+.method-name{font-family:'Cinzel',serif;font-size:10px;font-weight:600;letter-spacing:0.08em;text-transform:uppercase;margin-bottom:6px;color:var(--ink)}
+.method-body{font-size:13px;color:var(--soft);line-height:1.5}
+.status-row{display:flex;gap:6px;align-items:center;font-size:13px;color:var(--soft);flex-wrap:wrap;margin-top:4px}
+.status-dot{width:8px;height:8px;border-radius:50%}
+.status-green{background:var(--green)}
+.status-orange{background:var(--orange)}
+.status-red{background:var(--red)}
+
+/* NIMBUS */
+.nimbus-card{background:var(--surface);border:1px solid rgba(44,36,32,0.18);border-left:3px solid var(--ink);padding:18px 20px;position:relative;overflow:hidden}
+.nimbus-ink-corner{position:absolute;top:0;right:0;pointer-events:none;opacity:0.12}
+.nimbus-eyebrow{font-family:'Cinzel',serif;font-size:9px;font-weight:600;letter-spacing:0.2em;text-transform:uppercase;color:var(--gold);margin-bottom:6px}
+.nimbus-title-main{font-family:'Cinzel',serif;font-size:17px;font-weight:700;color:var(--ink);letter-spacing:0.04em;margin-bottom:2px;line-height:1.2}
+.nimbus-subtitle-text{font-size:12px;color:var(--soft);font-style:italic;letter-spacing:0.06em;margin-bottom:14px}
+.nimbus-divider{width:100%;height:1px;background:linear-gradient(90deg,rgba(44,36,32,0.25),transparent);margin-bottom:14px}
+.nimbus-sub{margin-bottom:14px}
+.nimbus-sub-label{font-family:'Cinzel',serif;font-size:9px;font-weight:600;letter-spacing:0.14em;text-transform:uppercase;color:var(--soft);margin-bottom:5px;display:flex;align-items:center;gap:8px}
+.nimbus-sub-label::after{content:'';flex:1;height:1px;background:rgba(44,36,32,0.12)}
+.nimbus-sub-text{font-size:14.5px;color:var(--text);line-height:1.75;opacity:0.9}
+.nimbus-tilt{margin-top:16px;padding-top:14px;border-top:1px solid rgba(44,36,32,0.12)}
+.tilt-label{font-family:'Cinzel',serif;font-size:9px;font-weight:600;letter-spacing:0.14em;text-transform:uppercase;color:var(--soft);margin-bottom:10px}
+.tilt-bonuses{display:flex;gap:8px;margin-bottom:10px;flex-wrap:wrap}
+.tilt-bonus{font-family:'Cinzel',serif;font-size:12px;font-weight:600;padding:5px 14px;letter-spacing:0.06em;background:var(--gold-dim);border:1px solid var(--gold-border);color:var(--ink);display:flex;align-items:center;gap:6px}
+.tilt-bonus-val{font-size:16px;font-weight:700}
+.tilt-desc{font-size:13.5px;color:var(--soft);line-height:1.6;font-style:italic}
+.scent-tag{display:inline-flex;align-items:center;gap:6px;font-size:13px;color:var(--soft);font-style:italic;margin-top:10px;padding:5px 10px;background:var(--gold-dim);border:1px solid rgba(44,36,32,0.15)}
+</style>
+</head>
+<body>
+
+<svg id="paper-grain" aria-hidden="true">
+  <defs><filter id="grain"><feTurbulence type="fractalNoise" baseFrequency="0.68 0.52" numOctaves="4" seed="7" stitchTiles="stitch" result="n"/><feColorMatrix in="n" type="matrix" values="0 0 0 0 0.42  0 0 0 0 0.3  0 0 0 0 0.1  0 0 0 0.06 0"/></filter></defs>
+  <rect width="100%" height="100%" filter="url(#grain)"/>
+</svg>
+
+<svg id="ink-strokes" aria-hidden="true">
+  <path d="M 1022 0 C 960 16 898 50 856 104 C 816 156 800 218 820 268 C 834 304 856 328 864 352 L 846 364 C 836 338 812 310 797 268 C 776 212 794 146 836 90 C 880 32 944 -2 1016 -16 Z" fill="rgba(28,22,10,0.73)"/>
+  <path d="M 742 524 C 792 502 852 512 894 490 L 890 506 C 848 528 788 520 742 542 Z" fill="rgba(28,22,10,0.65)"/>
+  <ellipse cx="848" cy="370" rx="3" ry="6.5" fill="rgba(28,22,10,0.5)" transform="rotate(-25 848 370)"/>
+  <circle cx="858" cy="382" r="2.5" fill="rgba(28,22,10,0.36)"/>
+  <circle cx="840" cy="386" r="1.8" fill="rgba(28,22,10,0.28)"/>
+  <circle cx="896" cy="486" r="3" fill="rgba(28,22,10,0.44)"/>
+  <circle cx="904" cy="498" r="1.8" fill="rgba(28,22,10,0.3)"/>
+  <ellipse cx="884" cy="504" rx="1.5" ry="3.5" fill="rgba(28,22,10,0.28)"/>
+</svg>
+
+<div class="app-header">
+  <div class="header-top">
+    <div>
+      <span class="char-name">Renji</span>
+      <span style="font-family:'Cinzel',serif;font-size:12px;color:var(--ink);opacity:0.35;margin:0 8px">·</span>
+      <span style="font-family:'Cinzel',serif;font-size:12px;color:var(--ink);opacity:0.55;letter-spacing:0.14em;text-transform:uppercase">Reiki</span>
+    </div>
+    <span class="char-sub">Obrimos · Adamantine Arrow · Talon</span>
+    <span class="gnosis-badge">Gnosis ● / Wisdom 7</span>
+  </div>
+  <div class="tabs">
+    <div class="tab active" onclick="showTab('summary',this)">Summary</div>
+    <div class="tab" onclick="showTab('spells',this)">My Spells</div>
+    <div class="tab" onclick="showTab('casting',this)">How to Cast</div>
+  </div>
+</div>
+
+<div class="content-wrap">
+
+<!-- SUMMARY -->
+<div class="content active" id="summary">
+  <div class="section">
+    <div class="section-title">Main Stats</div>
+    <div class="stat-grid">
+      <div class="stat-pill"><div class="stat-val">—</div><div class="stat-lbl">Health</div></div>
+      <div class="stat-pill"><div class="stat-val">—</div><div class="stat-lbl">Willpower</div></div>
+      <div class="stat-pill"><div class="stat-val">—</div><div class="stat-lbl">Speed</div></div>
+      <div class="stat-pill"><div class="stat-val">—</div><div class="stat-lbl">Defense</div></div>
+      <div class="stat-pill"><div class="stat-val">—</div><div class="stat-lbl">Initiative</div></div>
+      <div class="stat-pill"><div class="stat-val">10/1</div><div class="stat-lbl">Mana Max/Turn</div></div>
+    </div>
+    <div class="note note-ink" style="font-size:12px;">Health = Stamina+5 · Willpower = Resolve+Composure · Speed = Str+Dex+5 · Defense = (lower of Wits or Dex)+Athletics · Initiative = Dex+Composure</div>
+  </div>
+  <div class="section">
+    <div class="section-title">Mana — <span id="mana-count">10</span>/10 &nbsp;<span style="font-size:10px;font-style:italic;color:var(--muted)">(click to spend · right-click to reset)</span></div>
+    <div class="mana-dots" id="mana-track"></div>
+    <div class="mana-hint">Regain at a Hallow: Oblation 1h, Gnosis+Composure roll · max 1 Mana/turn</div>
+  </div>
+  <div class="section">
+    <div class="section-title">Wisdom — 7/10</div>
+    <div class="wisdom-pips">
+      <div class="wis-pip"></div><div class="wis-pip"></div><div class="wis-pip"></div><div class="wis-pip"></div>
+      <div class="wis-pip wis-empty"></div><div class="wis-pip wis-empty"></div><div class="wis-pip wis-empty"></div>
+      <div class="wis-pip wis-empty"></div><div class="wis-pip wis-empty"></div><div class="wis-pip wis-empty"></div>
+    </div>
+    <div class="note note-time" style="font-size:12px;">Contained Paradox: roll Wisdom · each success removes 1 Paradox die but inflicts 1 resistant Bashing</div>
+  </div>
+  <div class="section">
+    <div class="section-title">Active Spells — 1 free slot (Gnosis 1)</div>
+    <div id="spell-slots-wrap"></div>
+    <div class="note note-ink" style="font-size:12px;">Extra slot beyond 1 = costs 1 Reach · cancel any active spell as a reflexive action</div>
+  </div>
+  <div class="section">
+    <div class="section-title">Arcana</div>
+    <div class="card time" style="margin-bottom:6px"><div style="display:flex;justify-content:space-between;align-items:center"><span style="font-family:'Cinzel',serif;font-size:13px;color:var(--time)">Time</span><span style="font-family:'Cinzel',serif;font-size:18px;font-weight:700;color:var(--time)">●●●</span><span class="tag tag-gray">Disciple · Off-Path</span></div></div>
+    <div class="card prime" style="margin-bottom:6px"><div style="display:flex;justify-content:space-between;align-items:center"><span style="font-family:'Cinzel',serif;font-size:13px;color:var(--prime)">Prime</span><span style="font-family:'Cinzel',serif;font-size:18px;font-weight:700;color:var(--prime)">●●</span><span class="tag tag-ink">Apprentice · Ruling</span></div></div>
+    <div class="card spirit"><div style="display:flex;justify-content:space-between;align-items:center"><span style="font-family:'Cinzel',serif;font-size:13px;color:var(--spirit)">Spirit</span><span style="font-family:'Cinzel',serif;font-size:18px;font-weight:700;color:var(--spirit)">●●</span><span class="tag tag-gray">Apprentice · Off-Path</span></div></div>
+  </div>
+  <div class="section">
+    <div class="section-title">Nimbus</div>
+    <div class="nimbus-card">
+      <svg class="nimbus-ink-corner" width="120" height="110" viewBox="0 0 120 110" aria-hidden="true">
+        <path d="M10 10 C42 7 78 16 108 8 C97 24 62 20 28 26Z" fill="rgba(28,22,10,1)"/>
+        <path d="M38 30 C65 25 92 32 118 22 L116 38 C90 48 64 42 38 46Z" fill="rgba(28,22,10,0.7)"/>
+        <path d="M68 52 C86 46 106 54 124 44 L122 56 C104 66 84 60 68 66Z" fill="rgba(28,22,10,0.45)"/>
+        <ellipse cx="120" cy="68" rx="2.5" ry="5" fill="rgba(28,22,10,0.5)" transform="rotate(-20 120 68)"/>
+        <circle cx="112" cy="78" r="2.5" fill="rgba(28,22,10,0.36)"/>
+      </svg>
+      <div class="nimbus-eyebrow">Nimbus · The Ink that Slows</div>
+      <div class="nimbus-title-main">Time that Breathes</div>
+      <div class="nimbus-subtitle-text">How the world feels Reiki's presence</div>
+      <div class="nimbus-divider"></div>
+      <div class="nimbus-sub">
+        <div class="nimbus-sub-label">Long-Term Nimbus</div>
+        <div class="nimbus-sub-text">The reality around Renji gently resists the world's rush. Digital clocks lose seconds without explanation. Machines that should have broken weeks ago still run. People who spend time with him report — without quite being able to say why — that they felt less urgency that day. Children settle. Conversations slow down, become more honest.<br><br>In the Chainwork, where rhythm is measured in biometrics and productivity per hour, this registers in the systems as a minor statistical anomaly. Not enough to trigger an alert. Just enough to be <em>strange</em>.</div>
+      </div>
+      <div class="nimbus-sub">
+        <div class="nimbus-sub-label">Immediate Nimbus — Brushstroke in the Air</div>
+        <div class="nimbus-sub-text">When Renji casts magic, the air around him behaves like ink in water. Dark, fluid traces appear suspended — not smoke, not light, but something carrying the presence and intent of calligraphy. Those with Mage Sight see characters that almost form words before dissolving. Those without sense something else: the city's frantic rhythm simply… stops pressing for a moment.</div>
+        <div class="scent-tag">The smell of wet sumi ink and old rice paper</div>
+      </div>
+      <div class="nimbus-sub">
+        <div class="nimbus-sub-label">Signature Nimbus — The Ink Trail</div>
+        <div class="nimbus-sub-text">What he touches with magic is marked with invisible traces — perceptible only through Mage Sight, like brushstrokes of ink that dried in the air. Places where he worked carry a residual quality of stillness, like the silence after someone finishes writing something important.</div>
+      </div>
+      <div class="nimbus-tilt">
+        <div class="tilt-label">Nimbus Tilt — The Brush's Stillness</div>
+        <div class="tilt-bonuses">
+          <div class="tilt-bonus"><span class="tilt-bonus-val">+1</span> die to Composure</div>
+          <div class="tilt-bonus"><span class="tilt-bonus-val">+1</span> die to Wits</div>
+        </div>
+        <div class="tilt-desc">When the Nimbus surfaces, urgency around it dissolves. The world doesn't stop — it simply becomes bearable for a moment. The stillness taught by Fumiko spreads beyond him; when time loosens, you see more. <em style="color:var(--muted);font-size:12px;">Scales with Gnosis.</em></div>
+      </div>
+    </div>
+  </div>
+</div>
+
+<!-- MY SPELLS -->
+<div class="content" id="spells">
+  <div class="note note-ink" style="margin-bottom:20px;font-size:13px;">Base pool: <strong>Gnosis (1) + Arcanum</strong> &nbsp;·&nbsp; Rote adds Rote Skill as Mudra Yantra &nbsp;·&nbsp; Praxis: 3 successes = Exceptional</div>
+
+  <!-- ROTES -->
+  <div class="section">
+    <div class="section-title">Rotes</div>
+
+    <div class="card time">
+      <div class="spell-name">Acceleration</div>
+      <div class="spell-tags">
+        <span class="tag tag-time">Time •••</span>
+        <span class="tag tag-ink">Rote</span>
+        <span class="tag tag-crimson">Cost: 1 Mana</span>
+        <span class="tag tag-gray">Practice: Perfecting</span>
+        <span class="tag tag-gray">Primary Factor: Potency</span>
+      </div>
+      <div class="dice-row">
+        <div class="dice-item"><div class="dice-val">4</div><div class="dice-lbl">Base (Gno1+Time3)</div></div>
+        <div class="dice-sep">+</div>
+        <div class="dice-item"><div class="dice-val" style="color:var(--soft)">Skill</div><div class="dice-lbl">Athletics / Drive / Stealth</div></div>
+        <div style="flex:1;text-align:right"><span style="font-family:'Cinzel',serif;font-size:9px;color:var(--ink);text-transform:uppercase;letter-spacing:0.08em;opacity:0.7">Free Reaches: <strong style="font-size:14px;opacity:1">3</strong></span></div>
+      </div>
+      <div class="spell-book-text">The mage can greatly accelerate her subject's temporal motion. From the perspective of onlookers she becomes a blur as if moving in fast motion, acting with impossible speed. At high enough levels, mundane creatures simply cannot perceive her at all, save perhaps for hair raising on the neck or a gut feeling that something is not quite right.<br><br>Multiply the subject's Speed by Potency. While under the spell's effect, the subject always goes first in a turn unless he chooses to delay his action, in which case he may interrupt any other character's turn with his own as a reflexive action, then return to the front of the Initiative queue the next turn. Other characters using pre-empting powers provoke a Clash of Wills. Acting in such accelerated time makes the subject very hard to hit, but only as long as he is able to concentrate; his Defense does not change, but add Potency to Defense before doubling it for Dodge actions. He may employ Defense (and Dodges) against firearms.</div>
+      <div class="spell-reach-list">
+        <div class="spell-reach-item"><strong>+1 Reach:</strong> Divide the time per roll of extended actions taken by the subject by Potency. The spell has no effect on the ritual casting interval of mages.</div>
+        <div class="spell-reach-item"><strong>+1 Reach:</strong> For a point of Mana, Dodge actions taken while under this spell's effect have the rote quality.</div>
+      </div>
+    </div>
+
+    <div class="card time" style="margin-top:10px">
+      <div class="spell-name">Perfect Timing</div>
+      <div class="spell-tags">
+        <span class="tag tag-time">Time •</span>
+        <span class="tag tag-ink">Rote</span>
+        <span class="tag tag-gray">Practice: Unveiling</span>
+        <span class="tag tag-gray">Primary Factor: Duration</span>
+      </div>
+      <div class="dice-row">
+        <div class="dice-item"><div class="dice-val">4</div><div class="dice-lbl">Base (Gno1+Time3)</div></div>
+        <div class="dice-sep">+</div>
+        <div class="dice-item"><div class="dice-val" style="color:var(--soft)">Skill</div><div class="dice-lbl">Empathy / Socialize / Streetwise</div></div>
+        <div style="flex:1;text-align:right"><span style="font-family:'Cinzel',serif;font-size:9px;color:var(--ink);text-transform:uppercase;letter-spacing:0.08em;opacity:0.7">Free Reaches: <strong style="font-size:14px;opacity:1">5</strong></span></div>
+      </div>
+      <div class="spell-book-text">The mage knows just the perfect time to act, whether it's with a kind (or condemning) word, a punch, or even simply slipping out a door at the right time. This spell does not directly alter time or affect others, but rather grants the subject a perfect temporal assessment of the situation. Others might describe her as "in the zone," mistaking her preternatural sense of timing for incredible focus.<br><br>The subject can spend a turn during the spell's Duration planning an action. The subject loses any Defense and must remain still while planning. A turn spent planning grants a bonus to the next action equal to Potency. This bonus can only be applied to mundane instant actions; extended actions and spellcasting rolls do not benefit from it.</div>
+    </div>
+
+    <div class="card spirit" style="margin-top:10px">
+      <div class="spell-name">Exorcist's Eye</div>
+      <div class="spell-tags">
+        <span class="tag tag-spirit">Spirit •</span>
+        <span class="tag tag-ink">Rote</span>
+        <span class="tag tag-gray">Practice: Unveiling</span>
+        <span class="tag tag-gray">Primary Factor: Duration</span>
+      </div>
+      <div class="dice-row">
+        <div class="dice-item"><div class="dice-val">3</div><div class="dice-lbl">Base (Gno1+Spirit2)</div></div>
+        <div class="dice-sep">+</div>
+        <div class="dice-item"><div class="dice-val" style="color:var(--soft)">Skill</div><div class="dice-lbl">Occult / Survival / Socialize</div></div>
+        <div style="flex:1;text-align:right"><span style="font-family:'Cinzel',serif;font-size:9px;color:var(--ink);text-transform:uppercase;letter-spacing:0.08em;opacity:0.7">Free Reaches: <strong style="font-size:14px;opacity:1">5</strong></span></div>
+      </div>
+      <div class="spell-book-text">The first spell most Spirit mages learn, this spell allows the mage to perceive and speak with spirits in the physical world, whether they are roaming freely in Twilight, slumbering within an object (including discorporated spirits in hibernation), or possessing a living being. She can also sense any spirit-related Manifestation Conditions in the area. Finally, she can see the conduit of any spirit with the Reaching Manifestation, but cannot communicate across the Gauntlet.</div>
+      <div class="spell-reach-list">
+        <div class="spell-reach-item"><strong>+1 Reach:</strong> The mage may shift her perceptions to see across the Gauntlet and into the Shadow (or into the physical world if she's in the Shadow). The spell is Withstood by the Gauntlet Strength.</div>
+      </div>
+    </div>
+
+    <div class="card prime" style="margin-top:10px">
+      <div class="spell-name">Dispel Magic</div>
+      <div class="spell-tags">
+        <span class="tag tag-prime">Prime •</span>
+        <span class="tag tag-ink">Rote</span>
+        <span class="tag tag-gray">Practice: Compelling</span>
+        <span class="tag tag-gray">Primary Factor: Potency</span>
+        <span class="tag tag-gray">Withstand: caster's Arcanum rating</span>
+      </div>
+      <div class="dice-row">
+        <div class="dice-item"><div class="dice-val">3</div><div class="dice-lbl">Base (Gno1+Prime2)</div></div>
+        <div class="dice-sep">+</div>
+        <div class="dice-item"><div class="dice-val" style="color:var(--soft)">Skill</div><div class="dice-lbl">Athletics / Intimidation / Occult</div></div>
+        <div style="flex:1;text-align:right"><span style="font-family:'Cinzel',serif;font-size:9px;color:var(--ink);text-transform:uppercase;letter-spacing:0.08em;opacity:0.7">Free Reaches: <strong style="font-size:14px;opacity:1">5</strong></span></div>
+      </div>
+      <div class="spell-book-text">All Awakened magic contains the capacity to end, to allow the Fallen World's laws to reassert themselves. By Compelling these flaws in an extant spell, the mage may temporarily suppress it — or even destroy it entirely. This spell is not potent enough to dispel an archmage's spells, and only works against Awakened magic. In addition, the mage must include all Arcana involved in the casting of the subject spell at one dot.<br><br>A successful casting suppresses the spell for the Duration of Dispel Magic.</div>
+      <div class="spell-reach-list">
+        <div class="spell-reach-item"><strong>Add Fate •:</strong> The mage may suppress the subject spell selectively, for a number of subjects equal to Dispel Magic's Scale factor.</div>
+        <div class="spell-reach-item"><strong>+2 Reach:</strong> For one point of Mana, the effect is Lasting. If the spell's original caster is still alive and has not relinquished the spell, she knows one of her spells was destroyed.</div>
+        <div class="spell-reach-item"><strong>Universal Counterspell</strong> (Attainment Prime ••): may counter any Awakened spell using Gnosis + Prime, even without knowing the Arcanum used.</div>
+      </div>
+    </div>
+  </div>
+
+  <!-- PRAXIS -->
+  <div class="section">
+    <div class="section-title">Praxis</div>
+    <div class="spell-add-card">
+      <div class="spell-add-title">Praxis — TBD</div>
+      <div class="spell-add-hint">A Praxis is a spell the mage has internalized through practice and repetition. Gains Exceptional Success on 3 dice (instead of 5). No Mana cost for Inferior/Common Arcana. You have 1 free Praxis at Gnosis 1.<br><br><em>Which spell defines Renji at his core?</em></div>
+    </div>
+  </div>
+
+  <!-- USEFUL -->
+  <div class="section">
+    <div class="section-title">Useful</div>
+    <div class="spell-add-card" style="margin-bottom:8px">
+      <div class="spell-add-title">Add a spell</div>
+      <div class="spell-add-hint">Spells you cast often (improvised or from your Arcana) that are worth having nearby for reference.</div>
+    </div>
+  </div>
+
+  <!-- OTHERS -->
+  <div class="section">
+    <div class="section-title">Others</div>
+    <div class="spell-add-card">
+      <div class="spell-add-title">Add a spell</div>
+      <div class="spell-add-hint">Anything else — spells you're learning, planning to use, or just want to keep an eye on.</div>
+    </div>
+  </div>
+</div>
+
+<!-- HOW TO CAST -->
+<div class="content" id="casting">
+  <div class="note note-ink" style="margin-bottom:16px;font-size:13px;">Gnosis 1 = <strong>Ritual: 3h</strong> · <strong>Max Yantras: 2</strong> · <strong>Paradox per extra Reach: 1 die</strong> · <strong>Max Arcanum: 3 (primary) / 2 (others)</strong></div>
+  <div class="section">
+    <div class="section-title">Step by Step</div>
+    <div class="step"><div class="step-num">1</div><div><div class="step-title">Choose the spell</div><div class="step-body">Must have all required Arcanum dots. Renji can cast: Time ●●● or lower · Prime ●● or lower · Spirit ●● or lower.</div></div></div>
+    <div class="step"><div class="step-num">2</div><div><div class="step-title">Choose casting method</div><div class="method-grid"><div class="method-card"><div class="method-name">Rote</div><div class="method-body">Pool: <strong>Gnosis+Arc+Skill</strong><br>5 dots free Reach<br>Identity hidden<br>No Mana for off-path</div></div><div class="method-card"><div class="method-name">Praxis</div><div class="method-body">Pool: <strong>Gnosis+Arc</strong><br>Normal Reaches<br><strong>3 successes = Exceptional</strong><br>No Mana for Inferior</div></div><div class="method-card"><div class="method-name">Improvised</div><div class="method-body">Pool: <strong>Gnosis+Arc</strong><br>+1 Mana if off-path<br><em>Time &amp; Spirit cost Mana!</em></div></div></div></div></div>
+    <div class="step"><div class="step-num">3</div><div><div class="step-title">Assign Reaches — free vs. paid (1 Paradox die each)</div><div class="step-body"><div class="reach-row header"><div>Spell</div><div style="text-align:center;color:var(--time)">Time</div><div style="text-align:center;color:var(--spirit)">Spirit</div><div style="text-align:center;color:var(--prime)">Prime</div></div><div class="reach-row"><div style="color:var(--soft)">Requires • (Perf. Timing, Exorcist's Eye, Dispel)</div><div class="reach-val" style="text-align:center;color:var(--time)">3</div><div class="reach-val" style="text-align:center;color:var(--spirit)">2</div><div class="reach-val" style="text-align:center;color:var(--prime)">2</div></div><div class="reach-row"><div style="color:var(--soft)">Requires ••• (Acceleration)</div><div class="reach-val" style="text-align:center;color:var(--time)">1</div><div class="reach-val" style="text-align:center;color:var(--muted)">—</div><div class="reach-val" style="text-align:center;color:var(--muted)">—</div></div><div class="reach-row"><div style="color:var(--ink);font-weight:500">Any Rote (treated as 5 dots)</div><div class="reach-val" style="text-align:center;color:var(--ink)">5−req</div><div class="reach-val" style="text-align:center;color:var(--ink)">5−req</div><div class="reach-val" style="text-align:center;color:var(--ink)">5−req</div></div><div class="note note-time" style="font-size:12px;margin-top:8px;"><strong>1 Reach can:</strong> Ritual→Instant · Change primary factor · Standard→Advanced factor · Touch→Sensory · Sensory→Remote</div></div></div></div>
+    <div class="step"><div class="step-num">4</div><div><div class="step-title">Spell Factors — dice penalties</div><div class="step-body"><div style="margin-bottom:8px">Primary Factor advances <strong>free</strong> (Arcanum −1 steps). Time 3 = 2 free steps.</div><div class="grid2" style="gap:8px"><div><div style="font-family:'Cinzel',serif;font-size:9px;color:var(--ink);text-transform:uppercase;letter-spacing:0.1em;margin-bottom:4px;opacity:0.65">Standard Duration</div><table class="ref-table"><tr><th>Duration</th><th>Dice</th></tr><tr><td>1 turn</td><td style="color:var(--green)">+0</td></tr><tr><td>2 turns</td><td style="color:var(--orange)">–2</td></tr><tr><td>5 turns</td><td style="color:var(--orange)">–6</td></tr><tr><td>10 turns</td><td style="color:var(--red)">–8</td></tr></table><div style="margin-top:8px;font-family:'Cinzel',serif;font-size:9px;color:var(--ink);text-transform:uppercase;letter-spacing:0.1em;margin-bottom:4px;opacity:0.65">Advanced Duration (1 Reach)</div><table class="ref-table"><tr><th>Duration</th><th>Dice</th></tr><tr><td>1 scene/hour</td><td style="color:var(--green)">+0</td></tr><tr><td>1 day</td><td style="color:var(--orange)">–2</td></tr><tr><td>1 week</td><td style="color:var(--orange)">–4</td></tr><tr><td>1 month</td><td style="color:var(--red)">–6</td></tr><tr><td>Indefinite</td><td style="color:var(--red)">–10 +Reach+Mana</td></tr></table></div><div><div style="font-family:'Cinzel',serif;font-size:9px;color:var(--ink);text-transform:uppercase;letter-spacing:0.1em;margin-bottom:4px;opacity:0.65">Potency</div><table class="ref-table"><tr><th>Potency</th><th>Dice</th></tr><tr><td>1</td><td style="color:var(--green)">+0</td></tr><tr><td>2</td><td style="color:var(--orange)">–2</td></tr><tr><td>3</td><td style="color:var(--orange)">–4</td></tr><tr><td>4</td><td style="color:var(--red)">–6</td></tr></table><div style="margin-top:8px;font-family:'Cinzel',serif;font-size:9px;color:var(--ink);text-transform:uppercase;letter-spacing:0.1em;margin-bottom:4px;opacity:0.65">Standard Scale</div><table class="ref-table"><tr><th>Targets</th><th>Dice</th></tr><tr><td>1 (Size 5)</td><td style="color:var(--green)">+0</td></tr><tr><td>2 (Size 6)</td><td style="color:var(--orange)">–2</td></tr><tr><td>4 (Size 7)</td><td style="color:var(--orange)">–4</td></tr><tr><td>8 (Size 8)</td><td style="color:var(--red)">–6</td></tr></table></div></div></div></div></div>
+    <div class="step"><div class="step-num">5</div><div><div class="step-title">Yantras — max 2 · max +5 bonus</div><div class="step-body"><div style="margin-bottom:8px">Only <strong>1 Yantra can be reflexive</strong> in instant casting. Others each extend casting by 1 turn.</div><table class="ref-table"><tr><th>Yantra</th><th>Bonus</th><th>Notes</th></tr><tr><td>Mudra (Rote Skill)</td><td style="color:var(--green)">+Skill dots</td><td>Rotes only · free gestures</td></tr><tr><td>Concentration</td><td style="color:var(--green)">+2</td><td>Cancelled by damage or non-reflexive action</td></tr><tr><td>Mantra</td><td style="color:var(--green)">+2</td><td>Cannot be reflexive</td></tr><tr><td>Runes</td><td style="color:var(--green)">+2</td><td>Breaking runes cancels spell</td></tr><tr><td>Environment / Tool</td><td style="color:var(--green)">+1</td><td>—</td></tr><tr><td>Dedicated Magical Tool</td><td style="color:var(--red)">–2 Paradox</td><td>Reduces Paradox, not dice</td></tr></table></div></div></div>
+    <div class="step"><div class="step-num">6</div><div><div class="step-title">Check Dice Pool</div><div class="step-body"><strong>Gnosis(1) + Arcanum + Yantras − Factor Penalties</strong><br><br><div class="status-row"><div class="status-dot status-green"></div>Positive → roll normally</div><div class="status-row"><div class="status-dot status-orange"></div>0 to −5 → chance die (only 10 counts)</div><div class="status-row"><div class="status-dot status-red"></div>−6 or worse → impossible, auto-fail</div></div></div></div>
+    <div class="step"><div class="step-num">7</div><div><div class="step-title">Pay Mana</div><div class="step-body"><table class="ref-table"><tr><th>Situation</th><th>Cost</th></tr><tr><td>Spell with Mana cost (e.g. Acceleration)</td><td>1 Mana</td></tr><tr><td>Improvised off-path (Time, Spirit)</td><td>1 Mana</td></tr><tr><td>Indefinite Duration</td><td>1 Mana</td></tr><tr><td>Mitigate Paradox</td><td>1 Mana / die</td></tr></table></div></div></div>
+    <div class="step"><div class="step-num">8</div><div><div class="step-title">Paradox — only if used extra Reach</div><div class="paradox-box"><div class="paradox-title">Paradox Roll</div><div class="paradox-body">Pool = 1 die per Reach beyond free · +1 per extra roll in scene · +1 if Sleepers witness · <span style="color:var(--green)">–2 Dedicated Tool</span> · <span style="color:var(--green)">–1 per Mana spent<br><br></span><strong>Contain:</strong> Roll Wisdom · successes remove Paradox dice but inflict 1 resistant Bashing each<br><strong>Release:</strong> 1R = abyssal Reach · 2R = change target · 3R = Tilt · 5R = Rank 2 entity</div></div></div></div>
+    <div class="step"><div class="step-num">9</div><div><div class="step-title">Roll and resolve!</div><div class="step-body"><table class="ref-table"><tr><th>Result</th><th>Effect</th></tr><tr><td style="color:var(--red)">Dramatic Failure</td><td>Spell fails. If Paradox was released, Paradox Condition applied to caster.</td></tr><tr><td style="color:var(--soft)">Failure</td><td>Spell doesn't work.</td></tr><tr><td style="color:var(--green)">Success (1+)</td><td>Spell works as specified.</td></tr><tr><td style="color:var(--ink);font-weight:500">Exceptional (5+ / 3+ Praxis)</td><td>Special effect from the spell.</td></tr></table><div class="note note-ink" style="margin-top:8px;font-size:12px;"><strong>Spell Control:</strong> Cancel any active spell as a reflexive action. Reduce factors (Potency, Duration, Scale) as an instant action. <strong>1 free slot</strong> — extra slot = 1 Reach.</div></div></div></div>
+  </div>
+</div>
+
+</div>
+
+<script>
+function showTab(id,el){document.querySelectorAll('.content').forEach(c=>c.classList.remove('active'));document.querySelectorAll('.tab').forEach(t=>t.classList.remove('active'));document.getElementById(id).classList.add('active');el.classList.add('active')}
+var manaMax=10,manaSpent=0;
+function renderMana(){var t=document.getElementById('mana-track'),c=document.getElementById('mana-count');t.innerHTML='';for(var i=0;i<manaMax;i++){var d=document.createElement('div');d.className='mana-dot'+(i>=(manaMax-manaSpent)?' spent':'');d.addEventListener('click',toggleMana.bind(null,i));d.addEventListener('contextmenu',function(e){e.preventDefault();manaSpent=0;renderMana()});t.appendChild(d)}c.textContent=manaMax-manaSpent}
+function toggleMana(i){var th=manaMax-manaSpent;if(i<th){manaSpent=Math.min(manaMax,manaSpent+1)}else{manaSpent=Math.max(0,manaSpent-1)}renderMana()}
+renderMana();
+var slots=[''];
+function renderSlots(){var w=document.getElementById('spell-slots-wrap');w.innerHTML='';slots.forEach(function(v,i){var r=document.createElement('div');r.className='spell-slot';r.innerHTML='<span class="spell-slot-label">#'+(i+1)+'</span><input class="spell-slot-input" placeholder="Active spell name…" value="'+v+'" oninput="updateSlot('+i+',this.value)"/>'+(i>0?'<span class="spell-slot-close" onclick="removeSlot('+i+')">✕</span>':'');w.appendChild(r)});var b=document.createElement('div');b.style.marginTop='8px';b.innerHTML='<button onclick="addSlot()" style="font-family:Cinzel,serif;font-size:10px;letter-spacing:0.1em;text-transform:uppercase;background:transparent;border:1px solid rgba(44,36,32,0.22);color:#2c2420;padding:5px 14px;cursor:pointer;">+ slot (costs 1 reach)</button>';w.appendChild(b)}
+function updateSlot(i,v){slots[i]=v}function addSlot(){slots.push('');renderSlots()}function removeSlot(i){slots.splice(i,1);renderSlots()}
+renderSlots();
+</script>
+</body>
+</html>
